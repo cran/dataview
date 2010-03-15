@@ -1,16 +1,19 @@
 \name{tree.view}
 \alias{tree.view}
 \title{Display contents of a list of lists in a summarized tree structure.}
-\usage{tree.view(x, compact="auto", show.data="auto", depth=Inf, indent=0)
+\usage{tree.view(x, compact="auto", show.data="auto", traverse.all=FALSE, depth=Inf,
+    indent=0)
 }
 \description{Display contents of a list of lists in a summarized tree structure.}
 \value{Nothing}
-\author{Christofer Bäcklin}
+\author{Christofer \enc{Bäcklin}{Backlin}}
 \arguments{\item{x}{List to be displayed.}
 \item{compact}{Wheter to display the list tree in compact mode. Optional,
 default: 'auto' i.e. adapt to terminal height.}
 \item{show.data}{Whether to show the contents of the list elements or just
 the structure. Optional, default: 'auto' i.e. adapt to terminal width.}
+\item{traverse.all}{Whether to treat objects of custom classes as lists or
+not traverse them (except if they are the root of the tree).}
 \item{depth}{Maximum number of levels to show.}
 \item{indent}{Internal.}
 }

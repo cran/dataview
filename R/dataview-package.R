@@ -3,8 +3,8 @@
 ##' \tabular{ll}{
 ##' Package: \tab dataview\cr
 ##' Type: \tab Package\cr
-##' Version: \tab 1.2-3\cr
-##' Date: \tab 2010-01-06\cr
+##' Version: \tab 1.2-11\cr
+##' Date: \tab 2010-03-15\cr
 ##' License: \tab GPL\cr
 ##' LazyLoad: \tab yes\cr
 ##' Depends: \tab xtermStyle\cr
@@ -26,7 +26,7 @@
 ##' @aliases dataview
 ##' @docType package
 ##' @title Human readable data presentation.
-##' @author Christofer Bäcklin \url{http://christofer.backlin.se/R/}
+##' @author Christofer \enc{Bäcklin}{Backlin} \url{http://christofer.backlin.se/R/}
 ##' @keywords data presentation xterm terminal prompt
 ##' @seealso \code{\link{whos}}, \code{\link{entry.view}}, \code{\link{tree.view}},
 ##'   \code{\link{heat.view}}, \code{\link[xtermStyle]{style}}

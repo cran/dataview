@@ -15,7 +15,7 @@ whos.set.mask(lst, envir=globalenv())
 
 
 }
-\author{Christofer Bäcklin}
+\author{Christofer \enc{Bäcklin}{Backlin}}
 \arguments{\item{pattern}{Regexp filtering of objects. Only objects matching the pattern
 are displayed. Optional, default: show all objects.}
 \item{envir}{Environment, data frame or list to be displayed. Optional,

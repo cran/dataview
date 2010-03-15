@@ -1,21 +1,29 @@
 \name{heat.view}
 \alias{heat.view}
-\title{Display heatvector, similar to 1-d heatmap.}
-\usage{heat.view(x, col, width)
+\title{Display heatmaps and heatvectors.}
+\usage{heat.view(x, pal, rng, width)
 }
-\description{Display heatvector, similar to 1-d heatmap.}
-\details{Quickly see the overall pattern of a vector in the terminal.}
+\description{Display heatmaps and heatvectors.}
+\details{Quickly see the overall pattern of a variable in the terminal.}
 \value{Nothing}
-\author{Christofer Bäcklin}
+\author{Christofer \enc{Bäcklin}{Backlin}}
 \arguments{\item{x}{Vector to be displayed.}
-\item{col}{Colormap. Either the name of a palette defined in \code{\link[xtermStyle]{xterm.pal}}
+\item{pal}{Palette. Either the name of a palette defined in \code{\link[xtermStyle]{xterm.pal}}
 or an integer vector with color indices (see \code{\link[xtermStyle]{display.xterm.colors}}).}
+\item{rng}{The numerical range which the palette describes. See \code{\link[xtermStyle]{discrete.color}}
+for more info.}
 \item{width}{Length of each line. Optional.}
 }
 \examples{data(iris)
 heat.view(iris$Species)
-heat.view(iris$Petal.Width)
+heat.view(matrix(iris$Petal.Width, 3, 50, byrow=TRUE, dimnames=list(levels(iris$Species), NULL)), pal="purples")
 
 run.status <- factor(runif(100) < .95, labels=c("Fail", "Pass"))
-heat.view(run.status, col=1:2)}
+heat.view(run.status, pal=1:2)
+
+#Tip for displayig the element names of a named vector:
+a <- runif(7)
+names(a) <- c("ATM", "CHK1", "CDC25", "p53", "CDC2", "CDK2", "CDK4")
+heat.view(a)            # No names displayed
+heat.view(as.matrix(a)) # Names displayed}
 

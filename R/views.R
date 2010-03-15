@@ -24,7 +24,7 @@
 ##' whos(USArrests)
 ##' 
 ##' whos.set.mask()
-##' @author Christofer Bäcklin
+##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
 whos <- function(pattern="", envir=globalenv(), exclude=getOption("whos.mask")){
     # Check if the user specified a pattern, environment or both
@@ -91,7 +91,7 @@ whos <- function(pattern="", envir=globalenv(), exclude=getOption("whos.mask")){
 ##' @param lst List of object names. These will be hidden from view.
 ##' @param envir Environment to work in.
 ##' @return Nothing. The mask is stored as `whos.mask' in the global option list.
-##' @author Christofer Bäcklin
+##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @rdname whos
 ##' @export
 whos.set.mask <- function(lst, envir=globalenv()){
@@ -110,12 +110,15 @@ whos.set.mask <- function(lst, envir=globalenv()){
 ##' @param x List or data frame.
 ##' @param sort Display the elements in alphabetical order of the names.
 ##'   Optional, default: FALSE.
+##' @param fmt \code{\link{sprintf}} type formatting string which will be
+##'   applied to numbers, e.g. for specifying number of decimals or alignment.
 ##' @return Nothing.
 ##' @examples
 ##' entry.view(Sys.getenv())
-##' @author Christofer Bäcklin
+##' entry.view(rnorm(20), fmt="\%5.2f")
+##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
-entry.view <- function(x, sort=FALSE){
+entry.view <- function(x, sort=FALSE, fmt=NULL){
     if(class(x) == "data.frame"){
         if(nrow(x) > 1){
             cat("Only showing first of", nrow(x), "objects of data frame\n")
@@ -135,7 +138,9 @@ entry.view <- function(x, sort=FALSE){
                 if(nchar(str) > output.width){
                     sprintf("%s %s", mode(obj), dimfun(obj))
                 } else {
-                    str
+                    if(is.numeric(obj) && length(obj) == 1 && !is.blank(fmt)){
+                        sprintf(fmt, obj)
+                    } else str
                 }
             } else {
                 if(mode(obj) != class(obj)){
@@ -152,92 +157,152 @@ entry.view <- function(x, sort=FALSE){
 }
 
 
-##' Display heatvector, similar to 1-d heatmap.
+##' Display heatmaps and heatvectors.
 ##'
-##' Quickly see the overall pattern of a vector in the terminal.
+##' Quickly see the overall pattern of a variable in the terminal.
 ##'
 ##' @param x Vector to be displayed.
-##' @param col Colormap. Either the name of a palette defined in \code{\link[xtermStyle]{xterm.pal}}
+##' @param pal Palette. Either the name of a palette defined in \code{\link[xtermStyle]{xterm.pal}}
 ##'   or an integer vector with color indices (see \code{\link[xtermStyle]{display.xterm.colors}}).
+##' @param rng The numerical range which the palette describes. See \code{\link[xtermStyle]{discrete.color}}
+##'   for more info.
 ##' @param width Length of each line. Optional.
 ##' @return Nothing
 ##' @examples
 ##' data(iris)
 ##' heat.view(iris$Species)
-##' heat.view(iris$Petal.Width)
+##' heat.view(matrix(iris$Petal.Width, 3, 50, byrow=TRUE, dimnames=list(levels(iris$Species), NULL)), pal="purples")
 ##'
 ##' run.status <- factor(runif(100) < .95, labels=c("Fail", "Pass"))
-##' heat.view(run.status, col=1:2)
-##' @author Christofer Bäcklin
+##' heat.view(run.status, pal=1:2)
+##'
+##' #Tip for displayig the element names of a named vector:
+##' a <- runif(7)
+##' names(a) <- c("ATM", "CHK1", "CDC25", "p53", "CDC2", "CDK2", "CDK4")
+##' heat.view(a)            # No names displayed
+##' heat.view(as.matrix(a)) # Names displayed
+##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
-heat.view <- function(x, col, width){
-    if(is.null(options()$color.scheme) || options()$color.scheme != "dark on light"){
-        col.f <- rev
-    } else {
-        col.f <- function(x) x
+heat.view <- function(x, pal, rng, width){
+    if(is.data.frame(x)){
+        x <- sapply(x, function(x){
+            if(is.character(x))
+                return(rep(NA, length(x)))
+            if(is.factor(x))
+                return(as.integer(x))
+            return(x)
+        })
     }
-    if(!missing(col) && is.character(col)) col <- col.f(xterm.pal(col)[[1]])
+  
+    dark.bg <- is.null(options()$color.scheme) || options()$color.scheme != "light on dark"
+    if(!missing(pal)){
+        if(is.character(pal)) pal <- xterm.pal(pal)
+        if(is.blank(pal)) stop("Palette not found.")
+        if(is.list(pal)) pal <- pal[[1]]
+    }
+    terminal.width <- if(is.blank(Sys.getenv("COLUMNS"))) 80L else as.integer(Sys.getenv("COLUMNS"))
     
     if(is.logical(x)){
-        if(missing(col)) col <- c(12,11)
-        x <- x + 1
-        legend.str <- c(style("False", fg=col[1]), style("True", fg=col[2]))
+        if(missing(pal)) pal <- c(12,11)
+        col <- discrete.color(x, range=c(0,1), pal)
+        legend.str <- c(style("False", fg=pal[1]), style("True", fg=pal[2]))
     } else if(is.numeric(x)){
-        if(missing(col))
-            col <- col.f(xterm.pal("long")[[1]])
-        x <- floor(1+length(col)*(x-min(x)) / (max(x)-min(x)))
-        x[x > length(col)] <- length(col)
-        legend.str <- rep("", length(col)+2)
-        legend.str[1] <- "Lowest"
-        legend.str[length(col)+2] <- "Highest"
-        for(i in 1:length(col)) legend.str[i+1] <- style("#", fg=col[i])
-    } else if(is.factor(x)) {
-        if(missing(col)){
-            if(is.ordered(x)){
-                col <- col.f(xterm.pal("long")[[1]])
-                col <- col[round(seq(1,25, length=length(levels(x))))]
+        if(missing(rng)){
+            range.domain <- sign(sum(sign( range(x, na.rm=TRUE) )))
+        } else {
+            range.domain <- sign(sum(sign( rng )))
+        }
+        if(missing(rng)){
+            rng <- if(range.domain == 0){  # Crossing zero
+                 c(-1, 1)*max(abs(x), na.rm=TRUE)
             } else {
-                col <- xterm.pal("Set3")[[1]]
-                col <- col[(1:length(levels(x))-1) %% length(col) + 1]
+                c(min(x, na.rm=TRUE), max(x, na.rm=TRUE))
+            }
+        }
+        if(missing(pal)){
+            pal <- switch(as.character(range.domain),
+                "-1" = if(dark.bg) xterm.pal("Blues")[[1]] else rev(xterm.pal("Blues")[[1]]),
+                 "0" = if(dark.bg) xterm.pal("DownUp")[[1]] else xterm.pal("long")[[1]],
+                 "1" = if(dark.bg) rev(xterm.pal("YlOrRd")[[1]]) else xterm.pal("YlOrdRd")[[1]])
+        }
+        col <- discrete.color(x, rng, pal)
+        legend.str <- rep("", length(pal)+2)
+        legend.str[1] <- trim(sprintf("%6g", rng[1]))
+        legend.str[length(pal)+2] <- trim(sprintf("%6g", rng[2]))
+        for(i in 1:length(pal)) legend.str[i+1] <- style(
+            if(abs(i - 1 - (length(pal)-1)/2) < 1) "x" else "#", fg=pal[i])
+    } else if(is.factor(x)) {
+        if(missing(pal)){
+            if(is.ordered(x)){
+                pal <- xterm.pal("long")[[1]]
+                pal <- pal[round(seq(1,25, length=length(levels(x))))]
+            } else {
+                pal <- xterm.pal("Set3")[[1]]
+                pal <- pal[(1:length(levels(x))-1) %% length(pal) + 1]
             }
         }
         legend.str <- rep("",length(levels(x)))
-        for(i in 1:length(levels(x))) legend.str[i] <- style(levels(x)[i], fg=col[i])
-        x <- as.integer(x)
+        for(i in 1:length(levels(x))) legend.str[i] <- style(levels(x)[i], fg=pal[i])
+        col <- pal[as.integer(x)]
     } else
         stop("Datatype not yet supported.")
 
-    if(is.vector(x)){
+
+
+    if(is.blank(dim(x)) || length(dim(x)) == 1){
         n <- length(x)
         n.digits <- ceiling(log10(n+1))
         if(missing(width)){
-            terminal.width <- if(is.blank(Sys.getenv("COLUMNS"))) 80L else as.integer(Sys.getenv("COLUMNS"))
             width <- terminal.width - n.digits - 2
             width <- floor(width / 10)*10
         }
         for(i in 1:ceiling(n/width)){
             cat(sprintf(sprintf("%%%ii  ", n.digits), (i-1)*width+1))
+            prev.style <- -1
             for(j in ((i-1)*width+1):min(n, i*width)){
-                cat(style(" ", bg=col[x[j]]))
+                # Only change style if the new element differs from last,
+                # easier to parse for slow computers
+                if(is.na(col[j])){
+                    if(prev.style != -1) cat(style.clear(make.default=FALSE))
+                    prev.style <- -1
+                } else if(col[j] != prev.style){
+                    cat(style.set(bg=col[j], make.default=FALSE))
+                    prev.style <- col[j]
+                }
+                cat(" ")
             }
-            cat("\n")
+            cat(sprintf("%s\n", style.get()))
         }
-    } else if(is.matrix(x)) {
+    } else if(length(dim(x)) == 2) {
         n <- nrow(x)
-        n.digits <- ceiling(log10(n+1))
-        terminal.width <- if(is.blank(Sys.getenv("COLUMNS"))) 80 else as.numeric(Sys.getenv("COLUMNS"))
-        chr <- if(ncol(x) > terminal.width/2 - n.digits-2) " " else "  "
+        rnames <- if(is.blank(rownames(x))) 1:nrow(x) else rownames(x)
+        n.chars <- max(sapply(rnames, nchar))
+        chr <- if(ncol(x) > terminal.width/2 - n.chars-2) " " else "  "
         for(i in 1:nrow(x)){
-            cat(sprintf(sprintf("%%%ii  ", n.digits), i))
+            cat(sprintf(sprintf("%%%is  ", n.chars), rnames[i]))
+            prev.style <- -1
             for(j in 1:ncol(x)){
-                cat(style(chr, bg=col[x[i,j]]))
+                if(is.na(col[i,j])){
+                    if(prev.style != -1) cat(style.clear(make.default=FALSE))
+                    prev.style <- -1
+                } else if(col[i,j] != prev.style){
+                    cat(style.set(bg=col[i,j], make.default=FALSE))
+                    prev.style <- col[i,j]
+                }
+                cat(chr)
             }
-            cat("\n")
+            cat(sprintf("%s\n", style.get()))
         }
     } else
         stop("Datatype not yet supported.")
 
-    cat(sprintf("\n%s%s\n\n", paste(rep(" ", n.digits + 2), collapse=""), paste(legend.str, collapse=" ")))
+    if(sum(nchar(legend.str[c(1, length(legend.str))])) + 2*length(legend.str) + 4 > terminal.width){
+        cat(sprintf("\n   %s %s %s\n\n", legend.str[1],
+                    paste(legend.str[3:length(legend.str)-1], collapse=""),
+                    legend.str[length(legend.str)]))
+    } else {
+        cat(sprintf("\n   %s\n\n", paste(legend.str, collapse=" ")))
+    }
 }
 
 
@@ -248,6 +313,8 @@ heat.view <- function(x, col, width){
 ##'   default: 'auto' i.e. adapt to terminal height.
 ##' @param show.data Whether to show the contents of the list elements or just
 ##'   the structure. Optional, default: 'auto' i.e. adapt to terminal width.
+##' @param traverse.all Whether to treat objects of custom classes as lists or
+##'   not traverse them (except if they are the root of the tree).
 ##' @param depth Maximum number of levels to show.
 ##' @param indent Internal.
 ##' @return Nothing
@@ -266,9 +333,9 @@ heat.view <- function(x, col, width){
 ##'
 ##' # Visualize it!
 ##' tree.view(make.list.tree())
-##' @author Christofer Bäcklin
+##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
-tree.view <- function(x, compact='auto', show.data='auto', depth=Inf, indent=0){
+tree.view <- function(x, compact='auto', show.data='auto', traverse.all=FALSE, depth=Inf, indent=0){
     terminal.lines <- if(is.blank(Sys.getenv("LINES"))) 24L else as.integer(Sys.getenv("LINES"))
 
     if(compact == 'auto'){
@@ -284,18 +351,21 @@ tree.view <- function(x, compact='auto', show.data='auto', depth=Inf, indent=0){
         compact <- count.lines(x) > terminal.lines
     }
 
-    my.names <- if(is.list(x)){
+    # Do not traverse the tree if 'x' is of a
+    # custom class unless it is also the root
+    if(class(x)[1] == "list" || is.list(x) && (indent == 0 || traverse.all)){
         if(is.blank(x)){
-            character(0)
-        } else if(!is.null(names(x))){
-            names(x)
+            my.names <- list()
         } else {
-            1:length(x)
+            my.names <- as.list(1:length(x))
+            if(!is.null(names(x))){
+                my.names <- lapply(my.names, function(i) if(is.blank(names(x[i]))) i else names(x[i]))
+            }
         }
     } else if(isS4(x)){
-        slotNames(x)
+        my.names <- slotNames(x)
     } else {
-        NULL
+        my.names <- NULL
     }
     
     if(is.null(my.names)){
@@ -312,17 +382,18 @@ tree.view <- function(x, compact='auto', show.data='auto', depth=Inf, indent=0){
         }
     } else {
         if(length(my.names) == 0){
-            cat(style.auto(NULL, "%s Empty list\n"))
+            cat(style.auto(NULL, "Empty list\n"))
         } else {
             for(i in 1:length(my.names)){
                 if(i == 1 && !compact) cat("\n")
                 if(i > 1 || !compact) cat(rep(" ", indent), sep="")
-                cat(style.auto(objfun(x, my.names[i]), my.names[i]),
+                cat(style.auto(objfun(x, my.names[[i]]), my.names[[i]]),
                     style.dim(": "),
                     sep="")
                 if(depth > 1){
-                    tree.view(objfun(x, my.names[i]), compact, show.data, depth-1,
-                        indent + 2 + compact * nchar(my.names[i]))
+                    tree.view(objfun(x, my.names[[i]]), compact, show.data,
+                        traverse.all, depth-1,
+                        indent + 2 + compact * nchar(my.names[[i]]))
                 } else {
                     cat(style.auto(NULL, "Max depth reached\n"))
                 }

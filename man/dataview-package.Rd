@@ -6,8 +6,8 @@
 \details{\tabular{ll}{
 Package: \tab dataview\cr
 Type: \tab Package\cr
-Version: \tab 1.2-3\cr
-Date: \tab 2010-01-06\cr
+Version: \tab 1.2-11\cr
+Date: \tab 2010-03-15\cr
 License: \tab GPL\cr
 LazyLoad: \tab yes\cr
 Depends: \tab xtermStyle\cr
@@ -26,7 +26,7 @@ look like it should check the help for the functions \sQuote{style} and
 \sQuote{style.mode} of \sQuote{xtermStyle} package.}
 \alias{dataview}
 \docType{package}
-\author{Christofer Bäcklin \url{http://christofer.backlin.se/R/}}
+\author{Christofer \enc{Bäcklin}{Backlin} \url{http://christofer.backlin.se/R/}}
 \keyword{data}
 \keyword{presentation}
 \keyword{xterm}
