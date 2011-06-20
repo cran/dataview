@@ -1,6 +1,7 @@
 import(xtermStyle)
 export(whos)
 export(whos.set.mask)
+export(whos.all)
 export(entry.view)
 export(heat.view)
 export(tree.view)

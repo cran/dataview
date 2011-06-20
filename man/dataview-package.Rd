@@ -6,8 +6,8 @@
 \details{\tabular{ll}{
 Package: \tab dataview\cr
 Type: \tab Package\cr
-Version: \tab 1.2-11\cr
-Date: \tab 2010-03-15\cr
+Version: \tab 1.3-1\cr
+Date: \tab 2011-06-20\cr
 License: \tab GPL\cr
 LazyLoad: \tab yes\cr
 Depends: \tab xtermStyle\cr

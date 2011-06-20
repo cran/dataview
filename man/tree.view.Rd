@@ -1,8 +1,8 @@
 \name{tree.view}
 \alias{tree.view}
 \title{Display contents of a list of lists in a summarized tree structure.}
-\usage{tree.view(x, compact="auto", show.data="auto", traverse.all=FALSE, depth=Inf,
-    indent=0)
+\usage{tree.view(x, compact="auto", show.data="auto", traverse.all=FALSE, lines=Inf,
+    depth=Inf, indent=0)
 }
 \description{Display contents of a list of lists in a summarized tree structure.}
 \value{Nothing}
@@ -14,6 +14,7 @@ default: 'auto' i.e. adapt to terminal height.}
 the structure. Optional, default: 'auto' i.e. adapt to terminal width.}
 \item{traverse.all}{Whether to treat objects of custom classes as lists or
 not traverse them (except if they are the root of the tree).}
+\item{lines}{Maximum number of lines to show.}
 \item{depth}{Maximum number of levels to show.}
 \item{indent}{Internal.}
 }

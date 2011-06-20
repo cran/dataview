@@ -80,7 +80,7 @@ flush(stderr()); flush(stdout())
 
 ### Name: whos
 ### Title: Display contents of an evironment, data...
-### Aliases: whos whos.set.mask
+### Aliases: whos whos.set.mask whos.all
 
 ### ** Examples
 whos()
@@ -88,6 +88,9 @@ data(USArrests)
 whos(USArrests)
 
 whos.set.mask()
+data(iris)
+whos()
+whos.all()
 
 
 ### * <FOOTER>

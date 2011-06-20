@@ -24,6 +24,9 @@
 ##' whos(USArrests)
 ##' 
 ##' whos.set.mask()
+##' data(iris)
+##' whos()
+##' whos.all()
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
 whos <- function(pattern="", envir=globalenv(), exclude=getOption("whos.mask")){
@@ -88,7 +91,10 @@ whos <- function(pattern="", envir=globalenv(), exclude=getOption("whos.mask")){
 
 ##' Set a default exclusion mask for \code{\link{whos}}.
 ##'
-##' @param lst List of object names. These will be hidden from view.
+##' Set a default exclusion mask for \code{\link{whos}}.
+##'
+##' @param lst List of object names. These will be hidden from view. Defaults to
+##'   all objects in \code{envir}.
 ##' @param envir Environment to work in.
 ##' @return Nothing. The mask is stored as `whos.mask' in the global option list.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
@@ -102,6 +108,18 @@ whos.set.mask <- function(lst, envir=globalenv()){
     else options(whos.mask = lst)
 }
 
+##' Shortcut for calling whos without exclusion.
+##'
+##' Shortcut for calling whos without exclusion.
+##'
+##' @param ... Parameters sent to \code{\link{whos}}.
+##' @return Nothing
+##' @author Christofer \enc{Bäcklin}{Backlin}
+##' @rdname whos
+##' @export
+whos.all <- function(...){
+    whos(..., exclude=NULL)
+}
 
 ##' Display a list (or rows of a data frame) in key-value-pairs.
 ##'
@@ -315,6 +333,7 @@ heat.view <- function(x, pal, rng, width){
 ##'   the structure. Optional, default: 'auto' i.e. adapt to terminal width.
 ##' @param traverse.all Whether to treat objects of custom classes as lists or
 ##'   not traverse them (except if they are the root of the tree).
+##' @param lines Maximum number of lines to show.
 ##' @param depth Maximum number of levels to show.
 ##' @param indent Internal.
 ##' @return Nothing
@@ -335,9 +354,14 @@ heat.view <- function(x, pal, rng, width){
 ##' tree.view(make.list.tree())
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
-tree.view <- function(x, compact='auto', show.data='auto', traverse.all=FALSE, depth=Inf, indent=0){
+tree.view <- function(x, compact='auto', show.data='auto', traverse.all=FALSE, lines=Inf, depth=Inf, indent=0){
+    if(lines <= 0){
+        cat(style.dim("Line limit reached\n"))
+        return(NULL)
+    }
     terminal.lines <- if(is.blank(Sys.getenv("LINES"))) 24L else as.integer(Sys.getenv("LINES"))
-
+    terminal.width <- if(is.blank(Sys.getenv("COLUMNS"))) 80L else as.integer(Sys.getenv("COLUMNS"))
+    
     if(compact == 'auto'){
         count.lines <- function(xx){
             if(is.list(xx)){
@@ -374,7 +398,7 @@ tree.view <- function(x, compact='auto', show.data='auto', traverse.all=FALSE, d
         try(data.str <- paste(x, collapse=", "), silent=TRUE)
         if(!is.null(data.str) && (show.data == TRUE ||
                 (show.data == 'auto' && 
-                nchar(data.str) < terminal.lines - indent))){
+                nchar(data.str) < terminal.width - indent))){
             if(is.null(x)){ cat(style.auto(NULL, "NULL"), "\n", sep="")
             } else cat(style.auto(x, data.str), "\n", sep="")
         } else {
@@ -392,7 +416,7 @@ tree.view <- function(x, compact='auto', show.data='auto', traverse.all=FALSE, d
                     sep="")
                 if(depth > 1){
                     tree.view(objfun(x, my.names[[i]]), compact, show.data,
-                        traverse.all, depth-1,
+                        traverse.all, lines-1, depth-1,
                         indent + 2 + compact * nchar(my.names[[i]]))
                 } else {
                     cat(style.auto(NULL, "Max depth reached\n"))
