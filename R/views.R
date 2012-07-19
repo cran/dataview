@@ -29,10 +29,9 @@
 ##' whos.all()
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
-whos <- function(pattern="", envir=globalenv(), exclude=getOption("whos.mask")){
+whos <- function(pattern="", envir=as.environment(-1), exclude=getOption("whos.mask")){
     # Check if the user specified a pattern, environment or both
-    if(missing(pattern)){ pattern <- ""
-    } else if(!is.character(pattern) && missing(envir)) {
+    if(!is.character(pattern) && missing(envir)) {
         envir <- pattern
         pattern <- ""
     }
@@ -40,9 +39,9 @@ whos <- function(pattern="", envir=globalenv(), exclude=getOption("whos.mask")){
     if(is.environment(envir)){
         obj.name <- ls(envir=envir, pattern=pattern)
     } else if(isS4(envir)){
-        obj.name <- slotNames(envir)
+        obj.name <- grep(pattern, slotNames(envir), value=TRUE)
     } else {
-        obj.name <- if(!is.null(names(envir))) names(envir) else 1:length(envir)
+        obj.name <- grep(pattern, if(!is.null(names(envir))) names(envir) else 1:length(envir), value=TRUE)
     }
     obj.name <- obj.name[!obj.name %in% exclude]
     # Present objects
@@ -51,32 +50,34 @@ whos <- function(pattern="", envir=globalenv(), exclude=getOption("whos.mask")){
         cat("No objects found\n")
     } else {
         # Make an object/property matrix (objects as rows, properties as columns)
-        obj <- matrix("", n, 6)
+        obj <- matrix("", n, 7, dimnames=list(NULL, c("name", "class", "S4", "dim", "bytes", "bytes.prefix", "comment")))
         # Go through all objects and assess their properties
-        obj[,1] <- obj.name
+        obj[,"name"] <- obj.name
         total.size <- 0
         for(i in 1:n){
             o <- objfun(envir, obj.name[i])
-            obj[i,2] <- if(length(class(o)) > 1){
+            obj[i,"class"] <- if(length(class(o)) > 1){
                 paste(class(o)[1], "...")
             } else if(class(o) == "factor"){
                 sprintf("factor (%i)", length(levels(o)))
             } else class(o)
-            if(obj[i,2] %in% c("matrix", "array")) obj[i,2] <- paste(mode(o), obj[i,2])
-            obj[i,3] <- if(isS4(o)) "S4  " else ""
-            obj[i,4] <- dimfun(o)
-            obj[i,5:6] <- sizefun(o)
+            if(obj[i,"class"] %in% c("matrix", "array")) obj[i,"class"] <- paste(mode(o), obj[i,"class"])
+            obj[i,"S4"] <- if(isS4(o)) "S4  " else ""
+            obj[i,"dim"] <- dimfun(o)
+            obj[i, c("bytes", "bytes.prefix")] <- sizefun(o)
             total.size <- total.size + object.size(o)
+            obj[i,"comment"] <- if(!is.blank(attr(o, "comment"))) "?!  " else ""  # comment() can be slow for large objects, use attr() instead
         }
-        if(any(obj[,3] != "")) obj[obj[,3] == "",3] <- "    "
+        if(any(obj[,"S4"] != "")) obj[obj[,"S4"] == "","S4"] <- "    "
+        if(any(obj[,"comment"] != "")) obj[obj[,"comment"] == "","comment"] <- "    "
         # Determine how many characters each column occupies i.e. length of longest entry in each column
         nc <- apply(obj, 2, function(x) max(nchar(x)))
         # Output table
         for(i in 1:n){
             cat(style.dim(sprintf(paste("%", ceiling(log10(n+1)), "i", sep=""), i)),
                 style.auto(objfun(envir, obj.name[i]),
-                    sprintf(paste("  %-",nc[1],"s  %-",nc[2],"s  %s%-",nc[4],"s %6.1f %-3s  ", sep=""),
-                        obj[i,1], obj[i,2], obj[i,3], obj[i,4], as.numeric(obj[i,5]), obj[i,6])),
+                    sprintf(paste("  %-",nc["name"],"s  %-",nc["class"],"s  %s%-",nc["dim"],"s %6.1f %-3s  %s", sep=""),
+                        obj[i,"name"], obj[i,"class"], obj[i,"S4"], obj[i,"dim"], as.numeric(obj[i,"bytes"]), obj[i,"bytes.prefix"], obj[i,"comment"])),
                 "\n", sep="")
         }
         # Output total size of all objects in table (not nessecarily all objects in workspace)
@@ -91,14 +92,11 @@ whos <- function(pattern="", envir=globalenv(), exclude=getOption("whos.mask")){
 
 ##' Set a default exclusion mask for \code{\link{whos}}.
 ##'
-##' Set a default exclusion mask for \code{\link{whos}}.
-##'
 ##' @param lst List of object names. These will be hidden from view. Defaults to
 ##'   all objects in \code{envir}.
 ##' @param envir Environment to work in.
 ##' @return Nothing. The mask is stored as `whos.mask' in the global option list.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
-##' @rdname whos
 ##' @export
 whos.set.mask <- function(lst, envir=globalenv()){
     # This function sets the default exclusion mask for the `whos' function.
@@ -121,12 +119,13 @@ whos.all <- function(...){
     whos(..., exclude=NULL)
 }
 
-##' Display a list (or rows of a data frame) in key-value-pairs.
+##' Display vectors, lists or rows of a data frames in key-value-pairs.
 ##'
 ##' Color coded according to class of contents.
 ##'
 ##' @param x List or data frame.
-##' @param sort Display the elements in alphabetical order of the names.
+##' @param i Row number to show.
+##' @param sort.fields Display the elements in alphabetical order of the names.
 ##'   Optional, default: FALSE.
 ##' @param fmt \code{\link{sprintf}} type formatting string which will be
 ##'   applied to numbers, e.g. for specifying number of decimals or alignment.
@@ -136,42 +135,86 @@ whos.all <- function(...){
 ##' entry.view(rnorm(20), fmt="\%5.2f")
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
-entry.view <- function(x, sort=FALSE, fmt=NULL){
-    if(class(x) == "data.frame"){
-        if(nrow(x) > 1){
-            cat("Only showing first of", nrow(x), "objects of data frame\n")
+entry.view <- function(x, i=1, sort.fields=FALSE, fmt=NULL){
+    df.input <- class(x) == "data.frame"
+    if(df.input) df <- x
+    
+    browsing <- TRUE
+    while(browsing){
+    
+        if(df.input){
+            if(nrow(df) > 1) cat("Showing row", i, "of", nrow(df))
+            if(rownames(df)[i] != as.character(i)) cat(":", rownames(df)[i])
+            cat("\n")
+            x <- as.list(df[i,])
         }
-        x <- as.list(x[1,])
-    }
 
-    if(is.blank(names(x))) names(x) <- 1:length(x)
-    name_maxlength <- max(as.numeric(lapply(names(x), nchar)))
-    terminal.width <- if(is.blank(Sys.getenv("COLUMNS"))) 80L else as.integer(Sys.getenv("COLUMNS"))
-    output.width <- terminal.width - 4 - name_maxlength
-    for(i in (if(sort) order(names(x)) else 1:length(x))){
-        # objfun should be used here
-        obj <- objfun(x, i)
-        content.str <- if(mode(obj) %in% c("numeric", "logical", "character", "factor")){
-                str <- paste(obj, collapse=", ")
-                if(nchar(str) > output.width){
-                    sprintf("%s %s", mode(obj), dimfun(obj))
-                } else {
-                    if(is.numeric(obj) && length(obj) == 1 && !is.blank(fmt)){
-                        sprintf(fmt, obj)
-                    } else str
-                }
+        terminal.width <- if(is.blank(Sys.getenv("COLUMNS"))) 80L else as.integer(Sys.getenv("COLUMNS"))
+        name.maxlength <- round(.6*terminal.width)
+        my.names <- if(is.blank(names(x))) as.character(1:length(x)) else names(x)
+        my.names <- sapply(my.names, function(n){
+            if(nchar(n) > name.maxlength){
+                sub(paste("^(.{0,", name.maxlength, "}).*$", sep=""), "\\1...", n)
             } else {
-                if(mode(obj) != class(obj)){
-                    sprintf("%s %s", mode(obj), class(obj))
-                } else
-                    class(obj)
+                n
             }
-        
-        cat(rep(" ", 2 + name_maxlength - nchar(names(x)[i])),
-            style.dim(sprintf("%s: ", names(x)[i])),
-            style.auto(obj, content.str),
-            "\n", sep="")
-    }
+        })
+        name.maxlength <- max(sapply(my.names, nchar))
+        output.width <- terminal.width - 4 - name.maxlength
+        for(j in (if(sort.fields) order(my.names) else 1:length(x))){
+            # objfun should be used here
+            obj <- objfun(x, j)
+            content.str <- if(mode(obj) %in% c("numeric", "logical", "character", "factor")){
+                    str <- paste(obj, collapse=", ")
+                    if(nchar(str) > output.width){
+                        sprintf("%s %s", mode(obj), dimfun(obj))
+                    } else {
+                        if(is.numeric(obj) && length(obj) == 1 && !is.blank(fmt)){
+                            sprintf(fmt, obj)
+                        } else str
+                    }
+                } else {
+                    if(mode(obj) != class(obj)){
+                        sprintf("%s %s", mode(obj), class(obj))
+                    } else
+                        class(obj)
+                }
+            
+            cat(rep(" ", 2 + name.maxlength - nchar(my.names[j])),
+                style.dim(sprintf("%s: ", my.names[j])),
+                style.auto(obj, content.str),
+                "\n", sep="")
+        }
+        if(df.input){
+            chars <- c(`85`="U", `117`="u", `100`="d", `68`="D", `103`="g")
+            new.i <- i
+            while(new.i == i){
+                inchar <- readline("Browse with u,d,U,D,g: ")
+                
+                if(!inchar %in% chars){
+                    browsing <- FALSE
+                    new.i <- 0
+                } else {
+                    if(inchar == "g"){
+                        new.i <- as.integer(readline("Enter line number: "))
+                    } else {
+                        new.i <- i + c(-10, -1, 1, 10)[which(inchar == chars)]
+                    }
+                    if(new.i < 1){
+                        if(i == 1) cat("Already at the top\n")
+                        new.i <- 1
+                    }
+                    if(new.i > nrow(df)){
+                        if(i == nrow(df)) cat("Already at the bottom\n")
+                        new.i <- nrow(df)
+                    }
+                }
+            }
+            i <- new.i
+        } else {
+            browsing <- FALSE
+        }
+    } # while browsing
 }
 
 
@@ -227,15 +270,13 @@ heat.view <- function(x, pal, rng, width){
     } else if(is.numeric(x)){
         if(missing(rng)){
             range.domain <- sign(sum(sign( range(x, na.rm=TRUE) )))
-        } else {
-            range.domain <- sign(sum(sign( rng )))
-        }
-        if(missing(rng)){
             rng <- if(range.domain == 0){  # Crossing zero
                  c(-1, 1)*max(abs(x), na.rm=TRUE)
             } else {
-                c(min(x, na.rm=TRUE), max(x, na.rm=TRUE))
+                range(x, na.rm=TRUE)
             }
+        } else {
+            range.domain <- sign(sum(sign(rng)))
         }
         if(missing(pal)){
             pal <- switch(as.character(range.domain),
@@ -260,12 +301,13 @@ heat.view <- function(x, pal, rng, width){
             }
         }
         legend.str <- rep("",length(levels(x)))
-        for(i in 1:length(levels(x))) legend.str[i] <- style(levels(x)[i], fg=pal[i])
+        for(i in 1:length(levels(x))) legend.str[i] <- style(sprintf("`%s`", levels(x)[i]), fg=pal[i])
+        if(length(legend.str) > 10){
+            legend.str <- c(legend.str[1:9], "...", legend.str[length(legend.str)])
+        }
         col <- pal[as.integer(x)]
     } else
         stop("Datatype not yet supported.")
-
-
 
     if(is.blank(dim(x)) || length(dim(x)) == 1){
         n <- length(x)
@@ -274,22 +316,26 @@ heat.view <- function(x, pal, rng, width){
             width <- terminal.width - n.digits - 2
             width <- floor(width / 10)*10
         }
+        # Go through the rows
         for(i in 1:ceiling(n/width)){
-            cat(sprintf(sprintf("%%%ii  ", n.digits), (i-1)*width+1))
+            printf(sprintf("%%%ii  ", n.digits), (i-1)*width+1)
             prev.style <- -1
             for(j in ((i-1)*width+1):min(n, i*width)){
                 # Only change style if the new element differs from last,
-                # easier to parse for slow computers
+                # easier to parse
                 if(is.na(col[j])){
                     if(prev.style != -1) cat(style.clear(make.default=FALSE))
                     prev.style <- -1
-                } else if(col[j] != prev.style){
-                    cat(style.set(bg=col[j], make.default=FALSE))
-                    prev.style <- col[j]
+                    cat("-")
+                } else {
+                    if(col[j] != prev.style){
+                        cat(style.set(bg=col[j], make.default=FALSE))
+                        prev.style <- col[j]
+                    }
+                    cat(" ")
                 }
-                cat(" ")
             }
-            cat(sprintf("%s\n", style.get()))
+            printf("%s\n", style.get())
         }
     } else if(length(dim(x)) == 2) {
         n <- nrow(x)
@@ -297,29 +343,33 @@ heat.view <- function(x, pal, rng, width){
         n.chars <- max(sapply(rnames, nchar))
         chr <- if(ncol(x) > terminal.width/2 - n.chars-2) " " else "  "
         for(i in 1:nrow(x)){
-            cat(sprintf(sprintf("%%%is  ", n.chars), rnames[i]))
+            printf(sprintf("%%%is  ", n.chars), rnames[i])
             prev.style <- -1
             for(j in 1:ncol(x)){
                 if(is.na(col[i,j])){
                     if(prev.style != -1) cat(style.clear(make.default=FALSE))
                     prev.style <- -1
-                } else if(col[i,j] != prev.style){
-                    cat(style.set(bg=col[i,j], make.default=FALSE))
-                    prev.style <- col[i,j]
+                    cat("-")
+                } else {
+                    if(col[i,j] != prev.style){
+                        cat(style.set(bg=col[i,j], make.default=FALSE))
+                        prev.style <- col[i,j]
+                    }
+                    cat(" ")
                 }
                 cat(chr)
             }
-            cat(sprintf("%s\n", style.get()))
+            printf("%s\n", style.get())
         }
     } else
         stop("Datatype not yet supported.")
 
     if(sum(nchar(legend.str[c(1, length(legend.str))])) + 2*length(legend.str) + 4 > terminal.width){
-        cat(sprintf("\n   %s %s %s\n\n", legend.str[1],
-                    paste(legend.str[3:length(legend.str)-1], collapse=""),
-                    legend.str[length(legend.str)]))
+        printf("\n   %s %s %s\n\n", legend.str[1],
+               paste(legend.str[3:length(legend.str)-1], collapse=""),
+               legend.str[length(legend.str)])
     } else {
-        cat(sprintf("\n   %s\n\n", paste(legend.str, collapse=" ")))
+        printf("\n   %s\n\n", paste(legend.str, collapse=" "))
     }
 }
 
@@ -383,7 +433,7 @@ tree.view <- function(x, compact='auto', show.data='auto', traverse.all=FALSE, l
         } else {
             my.names <- as.list(1:length(x))
             if(!is.null(names(x))){
-                my.names <- lapply(my.names, function(i) if(is.blank(names(x[i]))) i else names(x[i]))
+                my.names <- lapply(my.names, function(i) if(is.blank(names(x)[i])) i else names(x)[i])
             }
         }
     } else if(isS4(x)){
@@ -415,13 +465,54 @@ tree.view <- function(x, compact='auto', show.data='auto', traverse.all=FALSE, l
                     style.dim(": "),
                     sep="")
                 if(depth > 1){
-                    tree.view(objfun(x, my.names[[i]]), compact, show.data,
-                        traverse.all, lines-1, depth-1,
-                        indent + 2 + compact * nchar(my.names[[i]]))
+                        tree.view(objfun(x, my.names[[i]]), compact, show.data,
+                            traverse.all, lines-1, depth-1,
+                            indent + 2 + compact * nchar(my.names[[i]]))
                 } else {
                     cat(style.auto(NULL, "Max depth reached\n"))
                 }
             }
+        }
+    }
+}
+
+
+##' Display contents of a vector or list as line wrapped text
+##'
+##' @param x Vector or list to be displayed.
+##' @return Nothing
+##' @examples
+##' x <- rep(NA, 6)
+##' for(i in 1:6) x[i] <- paste(c("m", "a", "r", "u", "l", "k", " ")[1+floor(7*runif(100+floor(500*runif(1))))], collapse="")
+##' wrap.view(x)
+##' 
+##' x <- list(1:9, stuff=Sys.info(), today=date(), model=Outcome ~ Variables)
+##' wrap.view(x)
+##' @author Christofer \enc{Bäcklin}{Backlin}
+##' @export
+wrap.view <- function(x){
+    terminal.width <- if(is.blank(Sys.getenv("COLUMNS"))) 80L else as.integer(Sys.getenv("COLUMNS"))
+    indent <- 4
+    indent.str <- paste(rep(" ", indent), collapse="")
+    for(i in 1:length(x)){
+        printf("%s:\n", style(if(is.blank(names(x)[i])) i else names(x)[i], font.style="bold"))
+        obj <- objfun(x, i)
+        if(mode(obj) %in% c("numeric", "logical", "character", "factor")){
+            obj <- paste(as.character(obj), collapse=", ")
+            while(!is.blank(obj)){
+                obj <- sub("^\\s*", "", obj)
+                l <- regexpr(sprintf("^.{,%i}\\b", terminal.width-indent-1), obj)
+                l <- if(attr(l, "match.length") != -1) attr(l, "match.length") else terminal.width - 4
+                printf("%s%s\n", indent.str, substr(obj, 0, l))
+                obj <- substr(obj, l+1, nchar(obj))
+            }
+            printf("    %s\n", obj)
+        } else {
+            printf("%s%s\n\n", indent.str, style.auto(obj,
+                if(mode(obj) != class(obj)){
+                    sprintf("%s <%s>", mode(obj), class(obj))
+                } else
+                    class(obj)))
         }
     }
 }

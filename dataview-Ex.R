@@ -11,12 +11,15 @@ nameEx("entry.view")
 flush(stderr()); flush(stdout())
 
 ### Name: entry.view
-### Title: Display a list (or rows of a data frame) in key-value-pairs.
+### Title: Display vectors, lists or rows of a data frames in
+###   key-value-pairs.
 ### Aliases: entry.view
 
 ### ** Examples
+
 entry.view(Sys.getenv())
 entry.view(rnorm(20), fmt="%5.2f")
+
 
 
 cleanEx()
@@ -30,6 +33,7 @@ flush(stderr()); flush(stdout())
 ### Aliases: heat.view
 
 ### ** Examples
+
 data(iris)
 heat.view(iris$Species)
 heat.view(matrix(iris$Petal.Width, 3, 50, byrow=TRUE, dimnames=list(levels(iris$Species), NULL)), pal="purples")
@@ -44,6 +48,7 @@ heat.view(a)            # No names displayed
 heat.view(as.matrix(a)) # Names displayed
 
 
+
 cleanEx()
 nameEx("tree.view")
 ### * tree.view
@@ -56,20 +61,22 @@ flush(stderr()); flush(stdout())
 ### Aliases: tree.view
 
 ### ** Examples
+
 # Create a tree structure of lists
 make.list.tree <- function(boost=2) {
-n.children <- round(boost + rexp(1))
-if(n.children < 1){
-return(rep("data", 1+floor(5*runif(1))))
-} else {
-ll <- vector("list", n.children)
-names(ll) <- paste("node", 1:n.children)
-return(lapply(ll, function(x) make.list.tree(boost-1)))
-}
+    n.children <- round(boost + rexp(1))
+    if(n.children < 1){
+        return(rep("data", 1+floor(5*runif(1))))
+    } else {
+        ll <- vector("list", n.children)
+        names(ll) <- paste("node", 1:n.children)
+        return(lapply(ll, function(x) make.list.tree(boost-1)))
+    }
 }
 
 # Visualize it!
 tree.view(make.list.tree())
+
 
 
 cleanEx()
@@ -79,10 +86,12 @@ nameEx("whos")
 flush(stderr()); flush(stdout())
 
 ### Name: whos
-### Title: Display contents of an evironment, data...
-### Aliases: whos whos.set.mask whos.all
+### Title: Display contents of an evironment, data.frame or list as a
+###   summary table
+### Aliases: whos whos.all
 
 ### ** Examples
+
 whos()
 data(USArrests)
 whos(USArrests)
@@ -91,6 +100,28 @@ whos.set.mask()
 data(iris)
 whos()
 whos.all()
+
+
+
+cleanEx()
+nameEx("wrap.view")
+### * wrap.view
+
+flush(stderr()); flush(stdout())
+
+### Name: wrap.view
+### Title: Display contents of a vector or list as line wrapped text
+### Aliases: wrap.view
+
+### ** Examples
+
+x <- rep(NA, 6)
+for(i in 1:6) x[i] <- paste(c("m", "a", "r", "u", "l", "k", " ")[1+floor(7*runif(100+floor(500*runif(1))))], collapse="")
+wrap.view(x)
+
+x <- list(1:9, stuff=Sys.info(), today=date(), model=Outcome ~ Variables)
+wrap.view(x)
+
 
 
 ### * <FOOTER>

@@ -1,0 +1,13 @@
+a2f2991b271fc4191724cacbe7e4ebb7 *DESCRIPTION
+a35c300a629cb2e5a50e8fb6edcf2a06 *NAMESPACE
+96c47bfeef1211b0eda325e1b32a3c32 *R/dataview-package.R
+b75cbf7ef4d804ca4987c6d6e81b50c8 *R/helpers.R
+fc4f33a85ac74096a030f28953ba72f8 *R/views.R
+402f1875db99cbf502fc445b27f2326b *dataview-Ex.R
+98f438b68d2c8e3b627133aab099a5ec *man/dataview-package.Rd
+653a8e417bb350c07a541ee822d6e477 *man/entry.view.Rd
+993754e0602d43c0c52bf9c69a1ddd9f *man/heat.view.Rd
+47fa1b0a4ea59fa77b49f1b32a500a4f *man/tree.view.Rd
+68c1532ba2327215eb17a69ee53b0afc *man/whos.Rd
+9cdb98c7d33d4a2e9170165e5712740b *man/whos.set.mask.Rd
+438b372cba59b367cbda33d0021de4e3 *man/wrap.view.Rd

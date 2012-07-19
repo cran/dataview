@@ -6,7 +6,7 @@
 ##' @examples
 ##' is.blank(NULL)
 ##' @author Christofer \enc{Bäcklin}{Backlin}
-##' @nord
+##' @noRd
 is.blank <- function(x, false.triggers=FALSE){
     return(
         is.null(x) ||
@@ -19,13 +19,14 @@ is.blank <- function(x, false.triggers=FALSE){
 
 ##' Human readable object dimensions
 ##'
-##' @param x Object
+##' @param x Object.
+##' @param use.names Whether to include names of the dimensions.
 ##' @return A string describing the dimension of an object e.g. `scalar' or `50x2'
 ##' @examples
 ##' data(iris)
 ##' dimfun(iris)
 ##' @author Christofer \enc{Bäcklin}{Backlin}
-##' @nord
+##' @noRd
 dimfun <- function(x, use.names=FALSE) {
     if(!is.null(dim(x))){
         if(use.names && !is.null(names(dimnames(x)))){
@@ -50,7 +51,7 @@ dimfun <- function(x, use.names=FALSE) {
 ##' data(iris)
 ##' objfun(iris, "Species")
 ##' @author Christofer \enc{Bäcklin}{Backlin}
-##' @nord
+##' @noRd
 objfun <- function(envir, name){
     return(if(is.environment(envir)){
         get(name, envir=envir)
@@ -70,7 +71,7 @@ objfun <- function(envir, name){
 ##' data(iris)
 ##' sizefun(iris)
 ##' @author Christofer \enc{Bäcklin}{Backlin}
-##' @nord
+##' @noRd
 sizefun <- function(x) {
     if(object.size(x) == 0){
         return(c("0", ""))
@@ -79,6 +80,16 @@ sizefun <- function(x) {
         return(c(exp(log(object.size(x)) - i*log(1024)), c("B", "KiB", "MiB", "GiB", "TiB")[i+1]))
     }
 }
+
+##' Printf
+##'
+##' @param ... Sent to \code{sprintf}
+##' @return Nothing
+##' @examples
+##' printf("I have %i %s, oh boy!\n", 74, "bananas")
+##' @author Christofer \enc{Bäcklin}{Backlin}
+##' @noRd
+printf <- function(...) cat(sprintf(...))
 
 ##' Trim off leading and trailing whitespaces from a string
 ##'
@@ -89,6 +100,6 @@ sizefun <- function(x) {
 ##'     sprintf("%%10g", 123.456), trim(sprintf("%%10g", 123.456))
 ##' ))
 ##' @author Christofer \enc{Bäcklin}{Backlin}
-##' @nord
-trim <- function(str) sub("^\\s*", "", sub("\\s*$", "", str))
+##' @noRd
+trim <- function(str) sub("^\\s*(.*?)\\s*$", "\\1", str)
 

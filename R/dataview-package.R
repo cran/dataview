@@ -3,8 +3,8 @@
 ##' \tabular{ll}{
 ##' Package: \tab dataview\cr
 ##' Type: \tab Package\cr
-##' Version: \tab 1.3-1\cr
-##' Date: \tab 2011-06-20\cr
+##' Version: \tab 1.4-8\cr
+##' Date: \tab 2012-07-19\cr
 ##' License: \tab GPL\cr
 ##' LazyLoad: \tab yes\cr
 ##' Depends: \tab xtermStyle\cr
@@ -29,6 +29,6 @@
 ##' @author Christofer \enc{Bäcklin}{Backlin} \url{http://christofer.backlin.se/R/}
 ##' @keywords data presentation xterm terminal prompt
 ##' @seealso \code{\link{whos}}, \code{\link{entry.view}}, \code{\link{tree.view}},
-##'   \code{\link{heat.view}}, \code{\link[xtermStyle]{style}}
+##'   \code{\link{heat.view}}, \code{\link{wrap.view}}, \code{\link[xtermStyle]{style}}
 {}
 
