@@ -2,7 +2,7 @@
 \alias{heat.view}
 \title{Display heatmaps and heatvectors.}
 \usage{
-  heat.view(x, pal, rng, width)
+heat.view(x, pal, rng, width)
 }
 \arguments{
   \item{x}{Vector to be displayed.}
@@ -19,16 +19,18 @@
   \item{width}{Length of each line. Optional.}
 }
 \value{
-  Nothing
+Nothing
 }
 \description{
-  Quickly see the overall pattern of a variable in the
-  terminal.
+Quickly see the overall pattern of a variable in the
+terminal.
 }
 \examples{
 data(iris)
 heat.view(iris$Species)
-heat.view(matrix(iris$Petal.Width, 3, 50, byrow=TRUE, dimnames=list(levels(iris$Species), NULL)), pal="purples")
+x <- matrix(iris$Petal.Width, 3, 50, byrow=TRUE,
+            dimnames=list(levels(iris$Species), NULL))
+heat.view(x, pal="purples")
 
 run.status <- factor(runif(100) < .95, labels=c("Fail", "Pass"))
 heat.view(run.status, pal=1:2)
@@ -40,6 +42,6 @@ heat.view(a)            # No names displayed
 heat.view(as.matrix(a)) # Names displayed
 }
 \author{
-  Christofer \enc{Bäcklin}{Backlin}
+Christofer \enc{Bäcklin}{Backlin}
 }
 

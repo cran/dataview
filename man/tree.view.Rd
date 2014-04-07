@@ -2,9 +2,8 @@
 \alias{tree.view}
 \title{Display contents of a list of lists in a summarized tree structure.}
 \usage{
-  tree.view(x, compact = "auto", show.data = "auto",
-    traverse.all = FALSE, lines = Inf, depth = Inf,
-    indent = 0)
+tree.view(x, compact = "auto", show.data = "auto", traverse.all = FALSE,
+  lines = Inf, depth = Inf, indent = 0)
 }
 \arguments{
   \item{x}{List to be displayed.}
@@ -28,11 +27,11 @@
   \item{indent}{Internal.}
 }
 \value{
-  Nothing
+Nothing
 }
 \description{
-  Display contents of a list of lists in a summarized tree
-  structure.
+Display contents of a list of lists in a summarized tree
+structure.
 }
 \examples{
 # Create a tree structure of lists
@@ -51,6 +50,6 @@ make.list.tree <- function(boost=2) {
 tree.view(make.list.tree())
 }
 \author{
-  Christofer \enc{Bäcklin}{Backlin}
+Christofer \enc{Bäcklin}{Backlin}
 }
 

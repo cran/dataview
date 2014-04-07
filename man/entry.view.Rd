@@ -2,7 +2,7 @@
 \alias{entry.view}
 \title{Display vectors, lists or rows of a data frames in key-value-pairs.}
 \usage{
-  entry.view(x, i = 1, sort.fields = FALSE, fmt = NULL)
+entry.view(x, i = 1, sort.fields = FALSE, fmt = NULL)
 }
 \arguments{
   \item{x}{List or data frame.}
@@ -17,16 +17,16 @@
   number of decimals or alignment.}
 }
 \value{
-  Nothing.
+Nothing.
 }
 \description{
-  Color coded according to class of contents.
+Color coded according to class of contents.
 }
 \examples{
 entry.view(Sys.getenv())
 entry.view(rnorm(20), fmt="\\\%5.2f")
 }
 \author{
-  Christofer \enc{Bäcklin}{Backlin}
+Christofer \enc{Bäcklin}{Backlin}
 }
 

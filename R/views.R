@@ -1,5 +1,4 @@
 ##' @import xtermStyle
-##' @include helpers.R
 {}
 
 ##' Display contents of an evironment, data.frame or list as a summary table
@@ -29,7 +28,7 @@
 ##' whos.all()
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
-whos <- function(pattern="", envir=as.environment(-1), exclude=getOption("whos.mask")){
+whos <- function(pattern="", envir=parent.frame(), exclude=getOption("whos.mask")){
     # Check if the user specified a pattern, environment or both
     if(!is.character(pattern) && missing(envir)) {
         envir <- pattern
@@ -41,52 +40,45 @@ whos <- function(pattern="", envir=as.environment(-1), exclude=getOption("whos.m
     } else if(isS4(envir)){
         obj.name <- grep(pattern, slotNames(envir), value=TRUE)
     } else {
-        obj.name <- grep(pattern, if(!is.null(names(envir))) names(envir) else 1:length(envir), value=TRUE)
+        obj.name <- grep(pattern, if(!is.null(names(envir))) names(envir) else rep("", length(envir)), value=TRUE)
     }
     obj.name <- obj.name[!obj.name %in% exclude]
-    # Present objects
+
     n <- length(obj.name)
     if(n == 0){
         cat("No objects found\n")
     } else {
-        # Make an object/property matrix (objects as rows, properties as columns)
-        obj <- matrix("", n, 7, dimnames=list(NULL, c("name", "class", "S4", "dim", "bytes", "bytes.prefix", "comment")))
-        # Go through all objects and assess their properties
-        obj[,"name"] <- obj.name
         total.size <- 0
+        obj <- do.call(rbind, lapply(1:length(obj.name), function(i){
+            o <- objfun(if(is.environment(envir)) obj.name[i] else i, envir=envir)
+            total.size <<- total.size + object.size(o)
+            c(name = obj.name[i],
+              cpredictlass = if(length(class(o)) == 1) class(o) else paste(class(o)[1], "..."),
+              s4 = if(isS4(o)) "S4" else "",
+              dim = dimfun(o),
+              t(sizefun(o)),
+              comment = if(is.blank(comment(o))) "" else "+!")
+        }))
+
+        nc <- apply(nchar(obj), 2, max)
+        right.padding <- c(name="  ", class="  ", s4="  ", dim="  ", " ", "  ", comment="  ")
+        right.padding[apply(obj == "", 2, all)] <- ""
+        obj.align <- c(name="-", class="-", s4="-", dim="-", "", "-", comment="-")
+        row.pattern <- sprintf("%%s%%%ii%%s\n", ceiling(log10(n+1)))
+        obj.pattern <- paste0("  ", paste0("%", obj.align, nc, "s", right.padding, collapse=""))
+
         for(i in 1:n){
-            o <- objfun(envir, obj.name[i])
-            obj[i,"class"] <- if(length(class(o)) > 1){
-                paste(class(o)[1], "...")
-            } else if(class(o) == "factor"){
-                sprintf("factor (%i)", length(levels(o)))
-            } else class(o)
-            if(obj[i,"class"] %in% c("matrix", "array")) obj[i,"class"] <- paste(mode(o), obj[i,"class"])
-            obj[i,"S4"] <- if(isS4(o)) "S4  " else ""
-            obj[i,"dim"] <- dimfun(o)
-            obj[i, c("bytes", "bytes.prefix")] <- sizefun(o)
-            total.size <- total.size + object.size(o)
-            obj[i,"comment"] <- if(!is.blank(attr(o, "comment"))) "?!  " else ""  # comment() can be slow for large objects, use attr() instead
+            printf(row.pattern, style.dim(make.default=FALSE), i,
+                 style.auto(objfun(if(is.environment(envir)) obj.name[i] else i, envir=envir),
+                     do.call(sprintf, as.list(c(obj.pattern, obj[i,])))))
         }
-        if(any(obj[,"S4"] != "")) obj[obj[,"S4"] == "","S4"] <- "    "
-        if(any(obj[,"comment"] != "")) obj[obj[,"comment"] == "","comment"] <- "    "
-        # Determine how many characters each column occupies i.e. length of longest entry in each column
-        nc <- apply(obj, 2, function(x) max(nchar(x)))
-        # Output table
-        for(i in 1:n){
-            cat(style.dim(sprintf(paste("%", ceiling(log10(n+1)), "i", sep=""), i)),
-                style.auto(objfun(envir, obj.name[i]),
-                    sprintf(paste("  %-",nc["name"],"s  %-",nc["class"],"s  %s%-",nc["dim"],"s %6.1f %-3s  %s", sep=""),
-                        obj[i,"name"], obj[i,"class"], obj[i,"S4"], obj[i,"dim"], as.numeric(obj[i,"bytes"]), obj[i,"bytes.prefix"], obj[i,"comment"])),
-                "\n", sep="")
-        }
-        # Output total size of all objects in table (not nessecarily all objects in workspace)
+
         i <- trunc(log(total.size) / log(1024))
-        total.size <- exp(log(total.size) - i*log(1024))
-        total.size.suffix <- c("B", "KiB", "MiB", "GiB", "TiB")[i+1]
-        cat(style.dim(paste(c(rep(" ", ceiling(log10(n+1)) + 2*4+sum(nc[1:4]) - 7),
-                          sprintf("Total %6.1f %-3s  \n", total.size, total.size.suffix)),
-                          collapse="")))
+        total.str <- paste("Total ", sprintf("%.2f", exp(log(total.size) - i*log(1024)), collapse=" "))
+        total.suffix <- c("B", "KiB", "MiB", "GiB", "TiB")[i+1]
+        printf("%s%s\n",
+            paste(rep(" ", ceiling(log10(n+1)) + 2 + sum(nc[1:5] + sapply(right.padding[1:5], nchar)) - nchar(total.str) - 1), collapse=""),
+            style.dim(paste(total.str, total.suffix)))
     }
 }
 
@@ -115,8 +107,10 @@ whos.set.mask <- function(lst, envir=globalenv()){
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @rdname whos
 ##' @export
-whos.all <- function(...){
-    whos(..., exclude=NULL)
+whos.all <- function(..., envir=parent.frame()){
+    # parent.frame() called from here returns different 
+    # frame than if called as default arugment to whos.
+    whos(..., envir=envir, exclude=NULL)
 }
 
 ##' Display vectors, lists or rows of a data frames in key-value-pairs.
@@ -232,7 +226,9 @@ entry.view <- function(x, i=1, sort.fields=FALSE, fmt=NULL){
 ##' @examples
 ##' data(iris)
 ##' heat.view(iris$Species)
-##' heat.view(matrix(iris$Petal.Width, 3, 50, byrow=TRUE, dimnames=list(levels(iris$Species), NULL)), pal="purples")
+##' x <- matrix(iris$Petal.Width, 3, 50, byrow=TRUE,
+##'             dimnames=list(levels(iris$Species), NULL))
+##' heat.view(x, pal="purples")
 ##'
 ##' run.status <- factor(runif(100) < .95, labels=c("Fail", "Pass"))
 ##' heat.view(run.status, pal=1:2)
@@ -404,6 +400,39 @@ heat.view <- function(x, pal, rng, width){
 ##' tree.view(make.list.tree())
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
+tree.view <- function(x, depth=4, max.lines=200){
+    e <- new.env()
+    assign("count", max.lines, envir=e)
+    tv(e, x, depth, indent=0)
+}
+tv <- function(e, x, depth, indent){
+    obj.name <- if(is.blank(names(x))){
+        as.list(1:length(x))
+    } else {
+        lapply(1:length(x), function(i) if(names(x)[i] == "") i else names(x)[i])
+    }
+    for(i in 1:length(x)){
+        o <- objfun(x, obj.name[[i]])
+        if(is.list(o)){
+            printf(sprintf("%%%is%%s\n", 2*indent), "",
+                   style.auto(list(), obj.name[[i]]))
+            if(depth > 0)
+                tv(e, o, depth-1, indent+1)
+        } else {
+            printf(sprintf("%%%is%%s%%s: %%s\n", 2*indent), "",
+                   style.auto(o, obj.name[[i]]),
+                   style.dim(), style.auto(o, class(o)))
+        }
+    }
+
+#    if(e$count <= 0){
+#        cat(style.clear(), "\n")
+#        stop("Max lines reached.")
+#    }
+#    e$count <- e$count - length(x)
+}
+
+
 tree.view <- function(x, compact='auto', show.data='auto', traverse.all=FALSE, lines=Inf, depth=Inf, indent=0){
     if(lines <= 0){
         cat(style.dim("Line limit reached\n"))
@@ -482,8 +511,8 @@ tree.view <- function(x, compact='auto', show.data='auto', traverse.all=FALSE, l
 ##' @param x Vector or list to be displayed.
 ##' @return Nothing
 ##' @examples
-##' x <- rep(NA, 6)
-##' for(i in 1:6) x[i] <- paste(c("m", "a", "r", "u", "l", "k", " ")[1+floor(7*runif(100+floor(500*runif(1))))], collapse="")
+##' x <- replicate(6, paste(sample(c("m", "a", "r", "u", "l", "k", " "),
+##'     round(100+400*runif(1)), TRUE), collapse=""))
 ##' wrap.view(x)
 ##' 
 ##' x <- list(1:9, stuff=Sys.info(), today=date(), model=Outcome ~ Variables)

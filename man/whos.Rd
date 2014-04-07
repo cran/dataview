@@ -3,10 +3,10 @@
 \alias{whos.all}
 \title{Display contents of an evironment, data.frame or list as a summary table}
 \usage{
-  whos(pattern = "", envir = as.environment(-1),
-    exclude = getOption("whos.mask"))
+whos(pattern = "", envir = parent.frame(),
+  exclude = getOption("whos.mask"))
 
-  whos.all(...)
+whos.all(..., envir = parent.frame())
 }
 \arguments{
   \item{pattern}{Regexp filtering of objects. Only objects
@@ -27,16 +27,15 @@
   \item{...}{Parameters sent to \code{\link{whos}}.}
 }
 \value{
-  Nothing
+Nothing
 
-  Nothing
+Nothing
 }
 \description{
-  Color coded according to class and dimensions of
-  contents. See \code{\link[xtermStyle]{style}} for
-  details.
+Color coded according to class and dimensions of contents.
+See \code{\link[xtermStyle]{style}} for details.
 
-  Shortcut for calling whos without exclusion.
+Shortcut for calling whos without exclusion.
 }
 \examples{
 whos()
@@ -49,8 +48,8 @@ whos()
 whos.all()
 }
 \author{
-  Christofer \enc{Bäcklin}{Backlin}
+Christofer \enc{Bäcklin}{Backlin}
 
-  Christofer \enc{Bäcklin}{Backlin}
+Christofer \enc{Bäcklin}{Backlin}
 }
 

@@ -72,12 +72,14 @@ objfun <- function(envir, name){
 ##' sizefun(iris)
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @noRd
-sizefun <- function(x) {
-    if(object.size(x) == 0){
-        return(c("0", ""))
-    } else {            
-        i <- trunc(log(object.size(x)) / log(1024))
-        return(c(exp(log(object.size(x)) - i*log(1024)), c("B", "KiB", "MiB", "GiB", "TiB")[i+1]))
+sizefun <- function(x, fmt="%.2f") {
+    os <- object.size(x)
+    if(os == 0){
+        return(c(sprintf(fmt, 0), ""))
+    } else {
+        i <- trunc(log(os) / log(1024))
+        return(c(sprintf(fmt, exp(log(os) - i*log(1024))),
+                 c("B", "KiB", "MiB", "GiB", "TiB")[i+1]))
     }
 }
 
