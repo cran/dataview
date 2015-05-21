@@ -1,24 +1,23 @@
 Encoding: UTF-8
 Package: dataview
 Type: Package
-Title: Human readable data presentation
-Version: 2.0-9
-Date: 2014-04-07
-Author: Christofer Backlin
+Title: Data and Workspace Browser for Terminals
+Version: 2.1.1
+Date: 2015-05-21
+Authors@R: person("Christofer", "Backlin", role = c("aut", "cre"), email = "christofer.backlin@medsci.uu.se")
+Author: Christofer Backlin [aut, cre]
 Maintainer: Christofer Backlin <christofer.backlin@medsci.uu.se>
-Depends: xtermStyle
-Description: This package provides clear, informative and colorful ways of
-    presenting the contents of data.frame, list, environment etc. in the
-    prompt. Ideally this package should be used in terminals supporting xterm
-    256 colour mode, e.g. the standard Ubuntu terminal. The Mac OS X terminal
-    (as of Snow Leopard) only support ANSI colour, which still works but
-    doesn't look as nice. On Windows systems no colouring is supported. If the
-    output of functions like 'whos' is a mess or somehow doesn't look like it
-    should check the help for the functions 'style' and 'style.mode' of the
-    'xtermStyle' package.
+Imports: data.table, xtermStyle (>= 3.0.5)
+Description: Tools for deciphering the contents of
+	unknown objects or environments from within the terminal,
+	a problem often encountered when working with unfamiliar packages or debugging complex functions.
+	If working in xterm256 or ANSI terminals the output is coloured by default
+	to improve readability (e.g. the standard Ubuntu terminal).
+URL: http://github.com/backlin/dataview
+BugReports: https://github.com/backlin/dataview/issues
 License: GPL (>= 2)
 LazyLoad: yes
-Packaged: 2014-04-07 13:49:56 UTC; christofer
 NeedsCompilation: no
+Packaged: 2015-05-21 07:54:00 UTC; christofer
 Repository: CRAN
-Date/Publication: 2014-04-10 15:16:27
+Date/Publication: 2015-05-22 08:54:36
